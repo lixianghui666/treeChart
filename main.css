@@ -1,0 +1,259 @@
+* {
+    margin: 0px;
+}
+
+.cursor-drag{
+    cursor: url("./icons/drag.svg"),auto;
+}
+
+.cursor-r{
+    cursor: e-resize;
+}
+
+.cursor-t{
+    cursor: n-resize;
+}
+
+.cursor-b{
+    cursor: s-resize;
+}
+
+.cursor-l{
+    cursor: w-resize;
+}
+
+.cursor-lt{
+    cursor: nw-resize;
+}
+
+.cursor-rt{
+    cursor: ne-resize;
+}
+
+.cursor-lb{
+    cursor: sw-resize;
+}
+
+.cursor-rb{
+    cursor: se-resize;
+}
+
+.cursor-text{
+    cursor: url("./icons/text.svg"),auto;
+}
+
+
+body,
+html {
+    width: 100%;
+    height: 100%;
+}
+
+.treeChart {
+    background: #2d4059;
+    background: rgba(6,13,20,.18);
+}
+
+.drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    display: none;
+}
+
+.mask {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: -1;
+    background: rgba(0, 0, 0, .3);
+}
+
+.drawer_content {
+    width: 40%;
+    height: 100%;
+    background: #fff;
+    position: absolute;
+    right: 0;
+    top: 0;
+    box-sizing: border-box;
+    padding: 20px;
+}
+
+.drawer_title {
+    color: #333;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+input[type="text"],
+input[type="number"] {
+    outline: none;
+    border: none;
+    /* color: #2d4059; */
+    color: #fff;
+    background: #2d4059;
+    border-radius: 3px;
+    box-sizing: border-box;
+    padding: 3px 5px;
+    font-size: 10px;
+    width: auto;
+}
+
+input[type="number"] {
+    width: 60px;
+}
+
+.drawer_module {
+    display: flex;
+    align-items: center;
+    margin-top: 16px;
+    flex-shrink: 1;
+}
+
+.drawer_name {
+    font-size: 12px;
+    margin-right: 3px;
+}
+
+.rect_color,
+.text_color {
+    width: 20px;
+    height: 20px;
+}
+
+.el-popover .flex {
+    display: flex;
+    margin-top: 10px;
+}
+
+.flex-align-center {
+    align-items: center;
+}
+
+.flex-justify-content {
+    justify-content: space-between;
+}
+
+.el-button {
+    display: inline-block;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #dcdfe6;
+    color: #606266;
+    -webkit-appearance: none;
+    text-align: center;
+    box-sizing: border-box;
+    outline: none;
+    margin: 0;
+    transition: .1s;
+    font-weight: 500;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    padding: 5px 8px;
+    font-size: 8px;
+    border-radius: 4px;
+    align-items: center;
+}
+
+.el-popover {
+    position: fixed;
+    background: #fff;
+    min-width: 150px;
+    border-radius: 4px;
+    border: 1px solid #ebeef5;
+    padding: 12px;
+    z-index: 2000;
+    color: #606266;
+    line-height: 1.4;
+    text-align: justify;
+    font-size: 14px;
+    box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);
+    word-break: break-all;
+    top: 100px;
+    display: none;
+    transform-origin: 50% 0%;
+}
+
+.el-popover::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 0;
+    border: 6px solid #fff;
+    border-color: transparent transparent #fff transparent;
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.confirm {
+    margin-top: 20px;
+}
+
+.popover-title {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.px-10 {
+    font-size: 10px;
+}
+
+.ml-8 {
+    margin-left: 8px;
+}
+
+div[contenteditable] {
+    display: inline-block;
+}
+
+.context-menu {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, .7);
+    font-size: 8px;
+    position: fixed;
+    top: 100px;
+    border-radius: 6px;
+    transform-origin: 50% 50%;
+    transform: scale(.8);
+    display: none;
+}
+
+.context-menu .menu {
+    padding: 5px 8px;
+    cursor: pointer;
+}
+
+.menu:hover {
+    border-radius: 3px;
+    background: rgb(56, 99, 208);
+    color: #fff;
+}
+
+.edit{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    position: absolute;
+    left: 0px;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 400;
+    font-family: Arial;
+    overflow: hidden;
+    border-radius: 25%;
+}
+
+.edit_text{
+    transform-origin: 50% 50%;
+    outline: none;
+}
