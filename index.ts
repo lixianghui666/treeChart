@@ -11,10 +11,7 @@ const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingCont
 let w = $(window).width(), h = $(window).height();
 const graphs: Graph[] = [
     new Rect({
-        x: 200,
-        y: 300,
-        x1: 340,
-        y1: 336,
+        points: [[200,300],[340,336]],
         ctx,
         cvs,
         scale: 1,
@@ -23,10 +20,7 @@ const graphs: Graph[] = [
         drawStyle: GraphDrawStyle.STROKE
     }),
     new Rect({
-        x: 400,
-        y: 200,
-        x1: 540,
-        y1: 236,
+        points: [[400,200],[540,236]],
         ctx,
         cvs,
         scale: 1,
@@ -35,14 +29,12 @@ const graphs: Graph[] = [
         drawStyle: GraphDrawStyle.STROKE
     }),
     new Circle({
-        x: 500,
-        y: 300,
+       points: [[540,236]],
         r: 50,
         cvs, ctx
     }),
     new Text({
-        x: 100,
-        y: 100,
+        points: [[100,100]],
         text: `测试，
         哈哈`,
         cvs, ctx
@@ -71,7 +63,7 @@ $(document).mousedown(ev => {
     }
 
     // 判断当前点击的点是否是在页面中的某个元素身上
-    if (!editGraph) selectGraph(cvs, ctx);
+    if (!editGraph) selectGraph(cvs, ctx,true);
 
     // 点在编辑元素身上
     if (editGraph && judgePointInRect(editGraph, dx, dy)) {
@@ -192,10 +184,7 @@ draw();
  */
 function drawSelectRect(x: number, y: number, x1: number, y1: number, cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D) {
     selRect = new Rect({
-        x,
-        y,
-        x1,
-        y1,
+        points: [[x,y],[x1,y1]],
         r: 0,
         ctx,
         cvs,
@@ -246,7 +235,7 @@ function judgePointInRect(rect: Graph, dx: number, dy: number) {
  * @param ctx canvas context
  * @returns 
  */
-function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D) {
+function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D,one: boolean = false) {
     editGraph = null;
     let sw = Math.abs(dx - mx), sh = Math.abs(dy - my)
     let children: Graph[] = graphs.filter(({ x, y, x1, y1 }) => {
@@ -258,6 +247,10 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
     });
     let n = children.length
     if (n == 0) return;
+    if(one){
+        children = [children.pop()];
+        n = 1;
+    }
     let { x: lx, x1: rx, y: ly, y1: ry } = children[0];
     for (let i = 1; i < n; ++i) {
         let { x, x1, y, y1 } = children[i];
@@ -271,10 +264,7 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
 
     } else {
         editGraph = new Rect({
-            x: lx,
-            x1: rx,
-            y: ly,
-            y1: ry,
+            points: [[lx,ly],[rx,ry]],
             cvs,
             ctx,
             r: 0,

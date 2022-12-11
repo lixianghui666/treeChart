@@ -4,23 +4,15 @@ type VerticalAlign = "top" | "middle" | "bottom"
 import {Graph} from "../ts/graph"
 namespace GraphOption{
     export interface GraphOption{
-        x: number
-        y: number
+        points: Point[]
         ctx: CanvasRenderingContext2D
         cvs: JQuery<HTMLCanvasElement>
-        scale?: number,
+        scale?: number
         children?: Graph[]
         rotation?: number
     }
-    export interface Zenith{
-        x: number
-        y: number
-        x1: number
-        y1: number
-    }
+    type Point = [number,number]
     export interface Rect extends Circle{
-        x1: number
-        y1: number
         state?: RectState
     }
     export interface Circle extends GraphOption{
@@ -47,8 +39,6 @@ namespace GraphOption{
         drawStyle?: GraphDrawStyle
     }
     export interface Line extends GraphOption{
-        x1: number
-        y1: number
         strokeWidth?: number
         strokeStyle?: string
     }

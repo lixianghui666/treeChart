@@ -11,6 +11,12 @@ export class Graph {
     scale: number = 1
     rotation: number = 0
     children: Graph[] = []
+    constructor(config){
+        this.x = config.points.reduce((pre: number,[x]) => Math.min(x,pre),config.points[0][0]);
+        this.x1 = config.points.reduce((pre: number,[x]) => Math.max(x,pre),config.points[0][0]);
+        this.y = config.points.reduce((pre: number,[_,y]) => Math.min(y,pre),config.points[0][1]);
+        this.y1 = config.points.reduce((pre: number,[_,y]) => Math.max(y,pre),config.points[0][1]);
+    }
     draw() { }
 }
 export class Rect extends Graph {
@@ -27,12 +33,9 @@ export class Rect extends Graph {
     drawStyle: GraphDrawStyle
     type: GraphType = GraphType.RECT
     constructor(config: GraphOption.Rect) {
-        super();
+        super(config);
         const {
-            x,
-            y,
-            x1,
-            y1, r,
+            r,
             ctx,
             cvs,
             strokeWidth = defaultRectConfig.strokeWidth,
@@ -44,10 +47,6 @@ export class Rect extends Graph {
             state = RectState.DEFAULT,
             children = []
         } = config
-        this.x = x
-        this.y = y
-        this.x1 = x1
-        this.y1 = y1
         this.r = r * scale
         this.ctx = ctx
         this.cvs = cvs
@@ -92,8 +91,7 @@ export class Rect extends Graph {
         }
         new Text({
             text,
-            x: x + (x1 - x) / 2,
-            y: y + (y1 - y) / 2,
+            points: [[x + (x1 - x) / 2,y + (y1 - y) / 2]],
             maxWidth: x1 - x - 20,
             ctx,
             cvs,
@@ -103,8 +101,7 @@ export class Rect extends Graph {
         ctx.closePath();
         if (state === RectState.EDIT) {
             [[x, y], [x, y1], [x1, y], [x1, y1]].map(([rx, ry]) => new Circle({
-                x: rx,
-                y: ry,
+                points: [[rx,ry]],
                 r: globalConfig.graphEditConnerRadius,
                 strokeStyle: globalConfig.graphEditLineColor,
                 strokeWidth: globalConfig.graphEditLineWidth,
@@ -131,11 +128,10 @@ export class Circle extends Graph {
     sAngle: number
     eAngle: number
     constructor(config: GraphOption.Circle) {
-        super();
+        super(config);
         const {
             ctx,
             cvs,
-            x, y,
             r,
             drawStyle = GraphDrawStyle.STROKE,
             scale = 1,
@@ -146,7 +142,7 @@ export class Circle extends Graph {
             rotation = 0,
             sAngle = 0,
             eAngle = 360
-        } = config
+        } = config,{x,y} = this;
         this.scale = scale
         this.ctx = ctx
         this.cvs = cvs
@@ -165,14 +161,14 @@ export class Circle extends Graph {
         this.eAngle = eAngle
     }
     draw() {
-        const { ctx, x, y,x1,y1, r, fillStyle, drawStyle, strokeStyle, strokeWidth,rotation,sAngle,eAngle } = this,rx = Math.abs(x1 - x) / 2,ry = Math.abs(y1 - y) / 2;
+        const { ctx, x, y,x1,y1, r, fillStyle, drawStyle, strokeStyle, strokeWidth,rotation,sAngle,eAngle } = this,rx = (x1 - x) / 2,ry = (y1 - y) / 2;
         ctx.beginPath();
         ctx.fillStyle = fillStyle;
         ctx.lineWidth = strokeWidth;
         ctx.strokeStyle = strokeStyle;
         ctx.lineDashOffset = 0;
         ctx.setLineDash([0]);
-        ctx.ellipse(x + rx,y + ry,rx,ry,rotation,degToArc(sAngle),degToArc(eAngle));
+        ctx.ellipse(x + rx,y + ry,Math.abs(rx),Math.abs(ry),rotation,degToArc(sAngle),degToArc(eAngle));
         switch (drawStyle) {
             case GraphDrawStyle.FILL: ctx.fill(); break;
             case GraphDrawStyle.STROKEANDFILL: ctx.fill(); ctx.stroke(); break;
@@ -189,24 +185,16 @@ export class Line extends Graph {
     ctx: CanvasRenderingContext2D
     type: GraphType = GraphType.LINE
     constructor(config: GraphOption.Line) {
-        super();
+        super(config);
         const {
-            x,
-            y,
-            x1,
-            y1,
             strokeWidth = defaultLineConfig.strokeWidth,
             strokeStyle = defaultLineConfig.strokeStyle,
             ctx,
             cvs,
             scale
-        } = config;
+        } = config,{x,x1} = this;
         this.scale = scale
-        let w = Math.abs(x - x1);
-        this.x = x
-        this.y = y
-        this.x1 = x1
-        this.y1 = y1
+        let w = Math.abs(x - x1)
         this.strokeStyle = strokeStyle
         this.strokeWidth = strokeWidth
         this.ctx = ctx
@@ -243,10 +231,8 @@ export class Text extends Graph {
     fh: number = 0
     padding: number
     constructor(config: GraphOption.Text) {
-        super();
+        super(config);
         const {
-            x,
-            y,
             text = "",
             fillStyle = globalConfig.graphTextFillStyle,
             strokeStyle = globalConfig.graphStrokeStyle,
@@ -259,7 +245,7 @@ export class Text extends Graph {
             maxWidth = globalConfig.graphTextMaxWidth,
             drawStyle = GraphDrawStyle.FILL,
             scale = 1
-        } = config;
+        } = config,{x,y} = this;
         this.text = text
         this.fillStyle = fillStyle
         this.strokeStyle = strokeStyle
