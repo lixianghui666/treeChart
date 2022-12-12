@@ -98,7 +98,6 @@ $(document).mousedown(ev => {
 
 $(document).mousemove(ev => {
     mx = ev.clientX, my = ev.clientY;
-    console.log(drawMode);
     switch (drawMode) {
         case DrawMode.SELECT: drawSelectRect(dx, dy, mx, my, cvs, ctx); break;
         case DrawMode.DRAG: dragRect(preMx, preMy, mx, my); break;
@@ -112,8 +111,8 @@ $(document).mousemove(ev => {
         case DrawMode.STERTCHRB: stertchBevel(mx, my, "x1", "y1"); break;
     }
 
-    // 编辑状态 且不是拖拽
-    if (editGraph && drawMode < 2) {
+    // 编辑状态
+    if (editGraph && drawMode < 1) {
         // 矩形
         if (editGraph.type === GraphType.RECT) {
             $("body").attr("class", "");
@@ -200,7 +199,7 @@ function draw() {
     if (selRect) selRect.draw();
 
     // 编辑状态 且不是拖拽或者拉伸状态显示编辑样式
-    if (editGraph) editGraph.draw();
+    if (editGraph && drawMode < 2) editGraph.draw();
 }
 draw();
 
