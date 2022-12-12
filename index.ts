@@ -2,16 +2,16 @@
 import "./main"
 import { scalePx, enlargePx } from "./ts/util"
 import { rects as originRects, lines as originLines } from "./chart-data";
-import { DrawMode, EventType, GraphDrawStyle, GraphType, ParallelHorizationType, ParallerVerticalType, RectState } from "./ts/enum";
+import { DrawMode, EventType, GraphDrawStyle, GraphType, BoardKey, ParallelHorizationType, ParallerVerticalType, RectState } from "./ts/enum";
 import { drawLine, drawRectModule } from "./ts/draw";
 import { showMenu } from "./ts/menu";
 import { Circle, Line, Rect, Graph, Text } from "./ts/graph";
 import { defaultRectConfig, globalConfig, offset } from "./ts/config";
-const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingContext2D = cvs[0].getContext("2d")
-let w = $(window).width(), h = $(window).height();
+const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingContext2D = cvs[0].getContext("2d");
+let key: BoardKey = BoardKey.NULL, w = $(window).width(), h = $(window).height();
 const graphs: Graph[] = [
     new Rect({
-        points: [[200,300],[340,336]],
+        points: [[200, 300], [340, 336]],
         ctx,
         cvs,
         scale: 1,
@@ -20,7 +20,7 @@ const graphs: Graph[] = [
         drawStyle: GraphDrawStyle.STROKE
     }),
     new Rect({
-        points: [[400,200],[540,236]],
+        points: [[400, 200], [540, 236]],
         ctx,
         cvs,
         scale: 1,
@@ -29,12 +29,12 @@ const graphs: Graph[] = [
         drawStyle: GraphDrawStyle.STROKE
     }),
     new Circle({
-       points: [[540,236]],
+        points: [[540, 236]],
         r: 50,
         cvs, ctx
     }),
     new Text({
-        points: [[100,100]],
+        points: [[100, 100]],
         text: `测试，
         哈哈`,
         cvs, ctx
@@ -63,7 +63,7 @@ $(document).mousedown(ev => {
     }
 
     // 判断当前点击的点是否是在页面中的某个元素身上
-    if (!editGraph) selectGraph(cvs, ctx,true);
+    if (!editGraph) selectGraph(cvs, ctx, true);
 
     // 点在编辑元素身上
     if (editGraph && judgePointInRect(editGraph, dx, dy)) {
@@ -72,16 +72,24 @@ $(document).mousedown(ev => {
         if (cn == "") {
             $("body").addClass("cursor-drag");
             drawMode = DrawMode.DRAG;
-        }else{
+        } else {
+            const { x, x1, y, y1 } = editGraph;
+            editGraph.originPos = {
+                x, x1, y, y1
+            };
+            editGraph.children.forEach(graph => {
+                const { x, x1, y, y1 } = graph;
+                graph.originPos = { x, x1, y, y1 };
+            });
             // 拉伸状态
             drawMode = DrawMode[{
-                "cursor-lt": "STERTCHLT", 
-                "cursor-rt": "STERTCHRT", 
-                "cursor-rb": "STERTCHRB", 
+                "cursor-lt": "STERTCHLT",
+                "cursor-rt": "STERTCHRT",
+                "cursor-rb": "STERTCHRB",
                 "cursor-lb": "STERTCHLB",
-                "cursor-t": "STERTCHT", 
-                "cursor-r": "STERTCHR", 
-                "cursor-b": "STERTCHB", 
+                "cursor-t": "STERTCHT",
+                "cursor-r": "STERTCHR",
+                "cursor-b": "STERTCHB",
                 "cursor-l": "STERTCHL"
             }[cn]];
         }
@@ -90,21 +98,22 @@ $(document).mousedown(ev => {
 
 $(document).mousemove(ev => {
     mx = ev.clientX, my = ev.clientY;
+    console.log(drawMode);
     switch (drawMode) {
-        case DrawMode.SELECT: drawSelectRect(dx, dy, mx, my, cvs, ctx);break;
-        case DrawMode.DRAG: dragRect(preMx, preMy, mx, my);break;
-        case DrawMode.STERTCHL: stertchHorV(mx,"x");break;
-        case DrawMode.STERTCHR: stertchHorV(mx,"x1");break;
-        case DrawMode.STERTCHT: stertchHorV(my,"y");break;
-        case DrawMode.STERTCHB: stertchHorV(my,"y1");break;
-        case DrawMode.STERTCHLT: stertchBevel(mx,my,"x","y");break;
-        case DrawMode.STERTCHRT: stertchBevel(mx,my,"x1","y");break;
-        case DrawMode.STERTCHLB: stertchBevel(mx,my,"x","y1");break;
-        case DrawMode.STERTCHRB: stertchBevel(mx,my,"x1","y1");break;
+        case DrawMode.SELECT: drawSelectRect(dx, dy, mx, my, cvs, ctx); break;
+        case DrawMode.DRAG: dragRect(preMx, preMy, mx, my); break;
+        case DrawMode.STERTCHL: stertchHorV(mx, "x"); break;
+        case DrawMode.STERTCHR: stertchHorV(mx, "x1"); break;
+        case DrawMode.STERTCHT: stertchHorV(my, "y"); break;
+        case DrawMode.STERTCHB: stertchHorV(my, "y1"); break;
+        case DrawMode.STERTCHLT: stertchBevel(mx, my, "x", "y"); break;
+        case DrawMode.STERTCHRT: stertchBevel(mx, my, "x1", "y"); break;
+        case DrawMode.STERTCHLB: stertchBevel(mx, my, "x", "y1"); break;
+        case DrawMode.STERTCHRB: stertchBevel(mx, my, "x1", "y1"); break;
     }
 
     // 编辑状态 且不是拖拽
-    if (editGraph && ![DrawMode.DRAG].includes(drawMode)) {
+    if (editGraph && drawMode < 2) {
         // 矩形
         if (editGraph.type === GraphType.RECT) {
             $("body").attr("class", "");
@@ -135,7 +144,7 @@ $(document).mouseup(() => {
     }
     drawMode = null;
     selRect = null;
-    if(editGraph){
+    if (editGraph) {
         swapPoint(editGraph);
         editGraph.children.forEach(graph => swapPoint(graph));
     }
@@ -149,6 +158,28 @@ $(document).on("mousewheel", (ev) => {
 $(document).on("contextmenu", (ev) => {
     ev.stopPropagation();
     return false;
+}).on("keydown", (ev) => {
+    if (ev.key === "Shift") {
+        key = BoardKey.SHIFT;
+        if (drawMode >= 2 && drawMode <= 5) {
+            stertchBevel(
+                mx,
+                my,
+                [DrawMode.STERTCHLT, DrawMode.STERTCHLB].includes(drawMode) ? "x" : "x1",
+                [DrawMode.STERTCHLT, DrawMode.STERTCHRT].includes(drawMode) ? "y" : "y1"
+            );
+        }
+    }
+}).on("keyup", () => {
+    key = BoardKey.NULL;
+    if (drawMode >= 2 && drawMode <= 5) {
+        stertchBevel(
+            mx,
+            my,
+            [DrawMode.STERTCHLT, DrawMode.STERTCHLB].includes(drawMode) ? "x" : "x1",
+            [DrawMode.STERTCHLT, DrawMode.STERTCHRT].includes(drawMode) ? "y" : "y1"
+        );
+    }
 });
 
 
@@ -169,7 +200,7 @@ function draw() {
     if (selRect) selRect.draw();
 
     // 编辑状态 且不是拖拽或者拉伸状态显示编辑样式
-    if (editGraph && drawMode < 2) editGraph.draw();
+    if (editGraph) editGraph.draw();
 }
 draw();
 
@@ -184,7 +215,7 @@ draw();
  */
 function drawSelectRect(x: number, y: number, x1: number, y1: number, cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D) {
     selRect = new Rect({
-        points: [[x,y],[x1,y1]],
+        points: [[x, y], [x1, y1]],
         r: 0,
         ctx,
         cvs,
@@ -235,7 +266,7 @@ function judgePointInRect(rect: Graph, dx: number, dy: number) {
  * @param ctx canvas context
  * @returns 
  */
-function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D,one: boolean = false) {
+function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D, one: boolean = false) {
     editGraph = null;
     let sw = Math.abs(dx - mx), sh = Math.abs(dy - my)
     let children: Graph[] = graphs.filter(({ x, y, x1, y1 }) => {
@@ -247,7 +278,7 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
     });
     let n = children.length
     if (n == 0) return;
-    if(one){
+    if (one) {
         children = [children.pop()];
         n = 1;
     }
@@ -259,12 +290,11 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
         ly = Math.min(ly, y);
         ry = Math.max(ry, y1);
     }
-    // 如果lx和rx相等或者ly和ry相等就是条线，选择样式不一样
-    if (lx === rx || ly == ry) {
+    if (children.length == 1 && children[0].type === GraphType.LINE) {
 
     } else {
         editGraph = new Rect({
-            points: [[lx,ly],[rx,ry]],
+            points: [[lx, ly], [rx, ry]],
             cvs,
             ctx,
             r: 0,
@@ -286,13 +316,13 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
  * @param val 当前方向的值 
  * @param k 方向k
  */
-function stertchHorV(val: number,k: "x" | "x1" | "y" | "y1"){
-    const originData = JSON.parse(JSON.stringify(editGraph));
+function stertchHorV(val: number, k: "x" | "x1" | "y" | "y1") {
     editGraph[k] = val;
-    let dir = k.slice(0,1);
+    const { originPos } = editGraph, dir = k.slice(0, 1), scale = (editGraph[dir + "1"] - editGraph[dir]) / (originPos[dir + "1"] - originPos[dir]);
     editGraph.children.forEach(graph => {
-        graph[dir] = (graph[dir] - originData[dir]) / (originData[dir + "1"] - originData[dir]) * (editGraph[dir + "1"] - editGraph[dir]) + editGraph[dir];
-        graph[dir + "1"] = editGraph[dir + "1"] - (originData[dir + "1"] - graph[dir + "1"]) / (originData[dir + "1"] - originData[dir]) * (editGraph[dir + "1"] - editGraph[dir]);
+        let originMargin = graph.originPos[dir] - originPos[dir], originMargin1 = originPos[dir + "1"] - graph.originPos[dir + "1"];
+        graph[dir] = editGraph[dir] + originMargin * scale;
+        graph[dir + "1"] = editGraph[dir + "1"] - originMargin1 * scale;
     });
     draw();
 }
@@ -304,9 +334,18 @@ function stertchHorV(val: number,k: "x" | "x1" | "y" | "y1"){
  * @param xk x方向 key
  * @param yk y方向 key
  */
-function stertchBevel(mx: number,my: number,xk: "x" | "x1",yk: "y" | "y1"){
-    stertchHorV(mx,xk);
-    stertchHorV(my,yk);
+function stertchBevel(mx: number, my: number, xk: "x" | "x1", yk: "y" | "y1") {
+    if (key === BoardKey.SHIFT) {
+        let scale = 1, { originPos, x1, y1, x, y } = editGraph, h = originPos.y1 - originPos.y, w = originPos.x1 - originPos.x;
+        switch (xk + "-" + yk) {
+            case "x-y": scale = Math.max((x1 - mx) / w, (y1 - my) / h); mx = x1 - w * scale, my = y1 - h * scale; break;
+            case "x1-y": scale = Math.max((mx - x) / w, (y1 - my) / h); mx = x + w * scale, my = y1 - h * scale; break;
+            case "x-y1": scale = Math.max((x1 - mx) / w, (my - y) / h); mx = x1 - w * scale, my = y + h * scale; break;
+            case "x1-y1": scale = Math.max((mx - x) / w, (my - y) / h); mx = x + w * scale, my = y + h * scale; break;
+        }
+    }
+    stertchHorV(mx, xk);
+    stertchHorV(my, yk);
 }
 
 
@@ -315,11 +354,11 @@ function stertchBevel(mx: number,my: number,xk: "x" | "x1",yk: "y" | "y1"){
  * @param graph 元素
  * @param dir 方向
  */
-const swapPoint = (graph: Graph,dir?: "x" | "y") => {
-    if(dir)graph[dir] > graph[dir + "1"] && ([graph[dir],graph[dir + "1"]] = [graph[dir + "1"],graph[dir]])
-    else{
-        swapPoint(graph,"x");
-        swapPoint(graph,"y");
+const swapPoint = (graph: Graph, dir?: "x" | "y") => {
+    if (dir) graph[dir] > graph[dir + "1"] && ([graph[dir], graph[dir + "1"]] = [graph[dir + "1"], graph[dir]])
+    else {
+        swapPoint(graph, "x");
+        swapPoint(graph, "y");
     }
 };
 

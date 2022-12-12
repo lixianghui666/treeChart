@@ -11,11 +11,24 @@ export class Graph {
     scale: number = 1
     rotation: number = 0
     children: Graph[] = []
+    originPos: {
+        x: number
+        y: number
+        x1: number
+        y1: number
+    }
     constructor(config){
-        this.x = config.points.reduce((pre: number,[x]) => Math.min(x,pre),config.points[0][0]);
-        this.x1 = config.points.reduce((pre: number,[x]) => Math.max(x,pre),config.points[0][0]);
-        this.y = config.points.reduce((pre: number,[_,y]) => Math.min(y,pre),config.points[0][1]);
-        this.y1 = config.points.reduce((pre: number,[_,y]) => Math.max(y,pre),config.points[0][1]);
+        let x = config.points.reduce((pre: number,[x]) => Math.min(x,pre),config.points[0][0]),
+            x1 = config.points.reduce((pre: number,[x]) => Math.max(x,pre),config.points[0][0]),
+            y = config.points.reduce((pre: number,[_,y]) => Math.min(y,pre),config.points[0][1]),
+            y1 = config.points.reduce((pre: number,[_,y]) => Math.max(y,pre),config.points[0][1]);
+        this.x = x
+        this.x1 = x1
+        this.y = y
+        this.y1 = y1
+        this.originPos = {
+            x,y,x1,y1
+        }
     }
     draw() { }
 }

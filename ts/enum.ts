@@ -70,3 +70,9 @@ export enum GraphType{
     TEXT
 }
 
+
+export enum BoardKey{
+    NULL,
+    SHIFT
+}
+
