@@ -6,7 +6,7 @@ import { DrawMode, EventType, GraphDrawStyle, GraphType, BoardKey, ParallelHoriz
 import { drawLine, drawRectModule } from "./ts/draw";
 import { showMenu } from "./ts/menu";
 import { Circle, Line, Rect, Graph, Text } from "./ts/graph";
-import { defaultRectConfig, globalConfig, offset } from "./ts/config";
+import { globalConfig, offset } from "./ts/config";
 const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingContext2D = cvs[0].getContext("2d");
 let key: BoardKey = BoardKey.NULL, w = $(window).width(), h = $(window).height();
 const graphs: Graph[] = [
@@ -31,12 +31,13 @@ const graphs: Graph[] = [
     new Circle({
         points: [[540, 236]],
         r: 50,
-        cvs, ctx
+        cvs, ctx,
+        drawStyle: GraphDrawStyle.STROKE
     }),
     new Text({
         points: [[100, 100]],
         text: `测试，
-        哈哈`,
+哈哈1111111111`,
         cvs, ctx
     })
 ];
@@ -151,8 +152,11 @@ $(document).mouseup(() => {
 });
 
 $(document).on("mousewheel", (ev) => {
-    console.log(ev.clientX);
-})
+    let {deltaX: x,deltaY: y} = ev.originalEvent as WheelEvent;
+    offset.x -= x / 2;
+    offset.y -= y / 2;
+    draw();
+});
 
 $(document).on("contextmenu", (ev) => {
     ev.stopPropagation();
@@ -197,9 +201,11 @@ function draw() {
 
     // 当前是选择元素状态 画选择框
     if (selRect) selRect.draw();
-
     // 编辑状态 且不是拖拽或者拉伸状态显示编辑样式
-    if (editGraph && drawMode < 2) editGraph.draw();
+    if (editGraph) {
+        if(editGraph.children.length > 0)editGraph.children.forEach(graph => graph.editDraw());
+        editGraph.draw();
+    }
 }
 draw();
 
@@ -334,7 +340,7 @@ function stertchHorV(val: number, k: "x" | "x1" | "y" | "y1") {
  * @param yk y方向 key
  */
 function stertchBevel(mx: number, my: number, xk: "x" | "x1", yk: "y" | "y1") {
-    if (key === BoardKey.SHIFT) {
+    if (key === BoardKey.SHIFT || editGraph.children.length > 1 || editGraph.children[0].sameScaleRatio) {
         let scale = 1, { originPos, x1, y1, x, y } = editGraph, h = originPos.y1 - originPos.y, w = originPos.x1 - originPos.x;
         switch (xk + "-" + yk) {
             case "x-y": scale = Math.max((x1 - mx) / w, (y1 - my) / h); mx = x1 - w * scale, my = y1 - h * scale; break;

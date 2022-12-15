@@ -31,11 +31,8 @@ namespace GraphOption{
         fontSize?: number
         fontFamily?: string
         fontWeight?: number | string
-        textAlign?: HorizationAlign
-        textBaseline?: VerticalAlign
         strokeStyle?: string
         fillStyle?: string
-        maxWidth?: number
         drawStyle?: GraphDrawStyle
     }
     export interface Line extends GraphOption{

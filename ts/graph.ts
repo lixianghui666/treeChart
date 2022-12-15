@@ -1,8 +1,9 @@
 import { degToArc } from "./util"
-import { globalConfig, defaultRectConfig, defaultCircleConfig, defaultLineConfig, offset } from "./config"
+import { globalConfig, offset } from "./config"
 import { GraphDrawStyle, StrokeBorderType, RectState, GraphType } from "./enum"
 import { GraphOption, HorizationAlign, VerticalAlign } from "../types/graph"
 export class Graph {
+    __config: Graph
     x: number // 起点x
     y: number
     x1: number
@@ -11,68 +12,97 @@ export class Graph {
     scale: number = 1
     rotation: number = 0
     children: Graph[] = []
+    ctx: CanvasRenderingContext2D // 全局ctx
+    cvs: JQuery<HTMLCanvasElement> // canvas dom
+    drawStyle: GraphDrawStyle
+    strokeStyle: string // 边框颜色
+    fillStyle: string
+    strokeWidth: number // 边框宽度
+    textFillStyle: string = globalConfig.graphTextFillStyle // 文字填充颜色
+    strokeBorderType: StrokeBorderType
+    sameScaleRatio: boolean = false
+    text: string = "" // 文字
+    fontSize: number
+    fontFamily: string
+    fontWeight: number | string
     originPos: {
         x: number
         y: number
         x1: number
         y1: number
     }
-    constructor(config){
-        let x = config.points.reduce((pre: number,[x]) => Math.min(x,pre),config.points[0][0]),
-            x1 = config.points.reduce((pre: number,[x]) => Math.max(x,pre),config.points[0][0]),
-            y = config.points.reduce((pre: number,[_,y]) => Math.min(y,pre),config.points[0][1]),
-            y1 = config.points.reduce((pre: number,[_,y]) => Math.max(y,pre),config.points[0][1]);
+    constructor(config) {
+        const {
+            points,
+            ctx,
+            cvs,
+            drawStyle = GraphDrawStyle.FILL,
+            fillStyle = globalConfig.graphFillStyle,
+            strokeStyle = globalConfig.graphStrokeStyle,
+            strokeWidth = globalConfig.graphStrokeWidth,
+            strokeBorderType = StrokeBorderType.SOLID,
+            scale = globalConfig.defaultScaleValue,
+            children = [],
+            text = "",
+            fontSize = globalConfig.graphTextFontSize,
+            fontFamily = globalConfig.graphTextFontFamily,
+            fontWeight = globalConfig.graphTextFontWeight,
+        } = config;
+        let x = points.reduce((pre: number, [x]) => Math.min(x, pre), points[0][0]),
+            x1 = points.reduce((pre: number, [x]) => Math.max(x, pre), points[0][0]),
+            y = points.reduce((pre: number, [_, y]) => Math.min(y, pre), points[0][1]),
+            y1 = points.reduce((pre: number, [_, y]) => Math.max(y, pre), points[0][1]);
+        this.__config = config
         this.x = x
         this.x1 = x1
         this.y = y
         this.y1 = y1
+        this.ctx = ctx
+        this.cvs = cvs
+        this.drawStyle = drawStyle
+        this.strokeStyle = strokeStyle
+        this.strokeWidth =strokeWidth
+        this.fillStyle = fillStyle
+        this.strokeBorderType = strokeBorderType
+        this.scale = scale
+        this.children = children
+        this.text = text
+        this.fontSize = fontSize * scale
+        this.fontFamily = fontFamily
+        this.fontWeight = fontWeight
         this.originPos = {
-            x,y,x1,y1
+            x, y, x1, y1
         }
     }
     draw() { }
+    editDraw() {
+        const { x, y, x1, y1, cvs, ctx } = this;
+        new Rect({
+            points: [[x, y], [x1, y1]],
+            cvs,
+            ctx,
+            r: 0,
+            state: RectState.DEFAULT,
+            strokeStyle: globalConfig.graphEditLineColor,
+            strokeWidth: globalConfig.graphEditLineWidth,
+            drawStyle: GraphDrawStyle.STROKE
+        }).draw();
+    }
 }
 export class Rect extends Graph {
     r: number // 圆角
-    text?: string = "" // 文字
-    textFillStyle: string = defaultRectConfig.textFillStyle // 文字填充颜色
-    fillStyle: string // 填充颜色
-    strokeStyle: string // 边框颜色
-    strokeWidth: number // 边框宽度
-    strokeBorderType: StrokeBorderType // 边框样式
     state: RectState // rect状态
-    ctx: CanvasRenderingContext2D // 全局ctx
-    cvs: JQuery<HTMLCanvasElement> // canvas dom
-    drawStyle: GraphDrawStyle
     type: GraphType = GraphType.RECT
     constructor(config: GraphOption.Rect) {
         super(config);
         const {
             r,
-            ctx,
-            cvs,
-            strokeWidth = defaultRectConfig.strokeWidth,
-            drawStyle = GraphDrawStyle.FILL,
-            strokeBorderType = StrokeBorderType.SOLID,
-            scale = globalConfig.defaultScaleValue,
-            strokeStyle = defaultRectConfig.strokeStyle,
-            fillStyle = defaultRectConfig.fillStyle,
-            state = RectState.DEFAULT,
-            children = []
+            state = RectState.DEFAULT
         } = config
-        this.r = r * scale
-        this.ctx = ctx
-        this.cvs = cvs
-        this.drawStyle = drawStyle
-        this.strokeBorderType = strokeBorderType
-        this.scale = scale
-        this.strokeStyle = strokeStyle
-        this.fillStyle = fillStyle
-        this.strokeWidth = strokeWidth
+        this.r = r
         this.state = state
-        this.children = children
     }
-    draw() {
+    draw(): Graph {
         let { x, y, x1, y1, r, fillStyle, text, ctx, cvs, strokeBorderType, strokeStyle, strokeWidth, drawStyle, scale, state } = this;
         x += offset.x, x1 += offset.x;
         y += offset.y, y1 += offset.y;
@@ -102,10 +132,9 @@ export class Rect extends Graph {
             case GraphDrawStyle.STROKEANDFILL: ctx.fill(); ctx.stroke(); break;
             default: ctx.stroke();
         }
-        new Text({
+        if(text)new Text({
             text,
-            points: [[x + (x1 - x) / 2,y + (y1 - y) / 2]],
-            maxWidth: x1 - x - 20,
+            points: [[x + (x1 - x) / 2, y + (y1 - y) / 2]],
             ctx,
             cvs,
             scale: 1,
@@ -114,7 +143,7 @@ export class Rect extends Graph {
         ctx.closePath();
         if (state === RectState.EDIT) {
             [[x, y], [x, y1], [x1, y], [x1, y1]].map(([rx, ry]) => new Circle({
-                points: [[rx,ry]],
+                points: [[rx, ry]],
                 r: globalConfig.graphEditConnerRadius,
                 strokeStyle: globalConfig.graphEditLineColor,
                 strokeWidth: globalConfig.graphEditLineWidth,
@@ -124,97 +153,67 @@ export class Rect extends Graph {
                 drawStyle: GraphDrawStyle.STROKEANDFILL
             }).draw());
         }
+        return this;
     }
 }
 
 
 export class Circle extends Graph {
     r: number
-    fillStyle: string
-    strokeStyle: string
-    strokeWidth: number
-    strokeBorderType: StrokeBorderType
-    ctx: CanvasRenderingContext2D // 全局ctx
-    cvs: JQuery<HTMLCanvasElement> // canvas dom
-    drawStyle: GraphDrawStyle
     type: GraphType = GraphType.CIRCLE
     sAngle: number
     eAngle: number
     constructor(config: GraphOption.Circle) {
         super(config);
         const {
-            ctx,
-            cvs,
             r,
-            drawStyle = GraphDrawStyle.STROKE,
             scale = 1,
-            strokeStyle = defaultCircleConfig.strokeStyle,
-            fillStyle = defaultCircleConfig.fillStyle,
             strokeBorderType = StrokeBorderType.SOLID,
-            strokeWidth = defaultCircleConfig.strokeWidth,
             rotation = 0,
             sAngle = 0,
             eAngle = 360
-        } = config,{x,y} = this;
+        } = config, { x, y } = this;
         this.scale = scale
-        this.ctx = ctx
-        this.cvs = cvs
         this.x = x - r
         this.y = y - r
         this.r = r * scale
-        this.drawStyle = drawStyle
-        this.strokeStyle = strokeStyle
-        this.fillStyle = fillStyle
         this.strokeBorderType = strokeBorderType
-        this.strokeWidth = strokeWidth
         this.x1 = x + r
         this.y1 = y + r
         this.rotation = rotation
         this.sAngle = sAngle
         this.eAngle = eAngle
     }
-    draw() {
-        const { ctx, x, y,x1,y1, r, fillStyle, drawStyle, strokeStyle, strokeWidth,rotation,sAngle,eAngle } = this,rx = (x1 - x) / 2,ry = (y1 - y) / 2;
+    draw(): Graph {
+        let { ctx, x, y, x1, y1, r, fillStyle, drawStyle, strokeStyle, strokeWidth, rotation, sAngle, eAngle } = this, rx = (x1 - x) / 2, ry = (y1 - y) / 2;
+        x += offset.x;
+        y += offset.y;
         ctx.beginPath();
         ctx.fillStyle = fillStyle;
         ctx.lineWidth = strokeWidth;
         ctx.strokeStyle = strokeStyle;
         ctx.lineDashOffset = 0;
         ctx.setLineDash([0]);
-        ctx.ellipse(x + rx,y + ry,Math.abs(rx),Math.abs(ry),rotation,degToArc(sAngle),degToArc(eAngle));
+        ctx.ellipse(x + rx, y + ry, Math.abs(rx), Math.abs(ry), rotation, degToArc(sAngle), degToArc(eAngle));
         switch (drawStyle) {
             case GraphDrawStyle.FILL: ctx.fill(); break;
             case GraphDrawStyle.STROKEANDFILL: ctx.fill(); ctx.stroke(); break;
             default: ctx.stroke();
         }
         ctx.closePath();
+        return this;
     }
 }
 
 export class Line extends Graph {
-    strokeWidth: number
-    strokeStyle: string
-    cvs: JQuery<HTMLCanvasElement>
-    ctx: CanvasRenderingContext2D
     type: GraphType = GraphType.LINE
     constructor(config: GraphOption.Line) {
         super(config);
-        const {
-            strokeWidth = defaultLineConfig.strokeWidth,
-            strokeStyle = defaultLineConfig.strokeStyle,
-            ctx,
-            cvs,
-            scale
-        } = config,{x,x1} = this;
-        this.scale = scale
-        let w = Math.abs(x - x1)
-        this.strokeStyle = strokeStyle
-        this.strokeWidth = strokeWidth
-        this.ctx = ctx
-        this.cvs = cvs
     }
     draw() {
-        const { ctx, x, y, x1, y1, strokeStyle, strokeWidth } = this;
+        let { ctx, x, y, x1, y1, strokeStyle, strokeWidth } = this;
+        x += offset.x;
+        y += offset.y;
         ctx.beginPath();
         ctx.lineWidth = strokeWidth;
         ctx.strokeStyle = strokeStyle;
@@ -225,71 +224,54 @@ export class Line extends Graph {
     }
 }
 
-// export class TextSpan extends Graph{
-
-// }
 export class Text extends Graph {
-    text: string
-    fillStyle: string
-    strokeStyle: string
-    fontSize: number
-    fontFamily: string
-    fontWeight: number | string
-    textAlign: HorizationAlign
-    textBaseline: VerticalAlign
-    ctx: CanvasRenderingContext2D
-    maxWidth: number
-    drawStyle: GraphDrawStyle
-    type: GraphType = GraphType.TEXT
-    fh: number = 0
     padding: number
+    type: GraphType = GraphType.TEXT
+    _x: number
+    _y: number
+    constructor(config: GraphOption.Text) {
+        super(config)
+        const { padding } = globalConfig
+        this.padding = padding
+        this.sameScaleRatio = true
+    }
+    draw(): Graph {
+        let { __config, x, y, x1, padding, children } = this, { text, ctx, fontWeight, fontSize = globalConfig.graphTextFontSize, fontFamily } = __config, txts = text.split("\n");
+        y += offset.y;
+        if (text.trim() === "") return;
+        txts.forEach(txt => {
+            let metrics = ctx.measureText(txt), fw = metrics.width, fh = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+            children.push(new TextSpan({
+                ...__config,
+                points: [[this.x + offset.x, y]],
+                text: txt
+            }).draw());
+            y += fh + 2 * padding;
+            x = Math.max(x, this.x + fw + padding);
+        });
+        if (this.x1 === this.x) {
+            this.x1 = x + padding;
+            this.y1 = y + padding;
+            this.originPos = { x: this.x, y: this.y, y1: this.y1, x1: this.x1 };
+        }
+        return this;
+    }
+}
+
+export class TextSpan extends Text {
     constructor(config: GraphOption.Text) {
         super(config);
-        const {
-            text = "",
-            fillStyle = globalConfig.graphTextFillStyle,
-            strokeStyle = globalConfig.graphStrokeStyle,
-            fontSize = globalConfig.graphTextFontSize,
-            fontFamily = globalConfig.graphTextFontFamily,
-            fontWeight = globalConfig.graphTextFontWeight,
-            textAlign = "center",
-            textBaseline = "middle",
-            ctx,
-            maxWidth = globalConfig.graphTextMaxWidth,
-            drawStyle = GraphDrawStyle.FILL,
-            scale = 1
-        } = config,{x,y} = this;
-        this.text = text
-        this.fillStyle = fillStyle
-        this.strokeStyle = strokeStyle
-        this.fontSize = fontSize * scale
-        this.fontFamily = fontFamily
-        this.fontWeight = fontWeight
-        this.textAlign = textAlign
-        this.textBaseline = textBaseline
-        this.ctx = ctx
-        this.maxWidth = maxWidth
-        this.drawStyle = drawStyle
-        this.scale = scale
-        ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-        let metrics = ctx.measureText(text), fw = metrics.width, fh = metrics.fontBoundingBoxAscent;
-        this.padding = 5
-        this.fh = fh
-        this.y = y - fh - 5;
-        this.x = x - 5
-        this.x1 = x + fw + 5;
-        this.y1 = y + 5;
-
     }
-    draw() {
-        const { ctx, x, y, fh, text, padding, fontSize, fontFamily, fontWeight, fillStyle, maxWidth, textAlign, textBaseline, drawStyle } = this;
+    draw(): Graph {
+        const { ctx, x, y, text, padding, fontSize, fontFamily, fontWeight, fillStyle, drawStyle } = this;
         ctx.fillStyle = fillStyle;
-        // ctx.textAlign = textAlign;
-        // ctx.textBaseline = textBaseline;
+        ctx.textBaseline = "top";
+        ctx.font = `${fontSize}px oblique normal Microsoft YaiHei`;
         if (drawStyle === GraphDrawStyle.FILL) {
-            ctx.fillText(text, x + padding, y + fh + padding, maxWidth);
+            ctx.fillText(text, x + padding, y + padding);
         } else {
-            ctx.strokeText(text, x + padding, y + fh + padding, maxWidth);
+            ctx.strokeText(text, x + padding, y + padding);
         }
+        return this;
     }
 }

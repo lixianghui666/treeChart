@@ -47,11 +47,13 @@ body,
 html {
     width: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
 .treeChart {
     background: #2d4059;
     background: rgba(6,13,20,.18);
+    overflow: hidden;
 }
 
 .drawer {
