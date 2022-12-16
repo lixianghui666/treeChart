@@ -7,8 +7,9 @@ import { drawLine, drawRectModule } from "./ts/draw";
 import { showMenu } from "./ts/menu";
 import { Circle, Line, Rect, Graph, Text } from "./ts/graph";
 import { globalConfig, offset } from "./ts/config";
+import { GraphOption } from "./types/graph";
 const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingContext2D = cvs[0].getContext("2d"),
-bgCvs: JQuery<HTMLCanvasElement> = $(".treeChart_bg"),bgCtx = bgCvs[0].getContext("2d")
+    bgCvs: JQuery<HTMLCanvasElement> = $(".treeChart_bg"), bgCtx = bgCvs[0].getContext("2d")
 let key: BoardKey = BoardKey.NULL, w = $(window).width(), h = $(window).height();
 const graphs: Graph[] = [
     new Rect({
@@ -61,13 +62,12 @@ $(document).mousedown(ev => {
     dx = preMx = ev.clientX - offset.x, dy = preMy = ev.clientY - offset.y;
     drawMode = DrawMode.SELECT;
     // 点击的点不在编辑元素的区域里 清掉编辑状态
-    if (editGraph && !judgePointInRect(editGraph, dx, dy)) {
+    if (editGraph && !judgePointInRect(editGraph, dx, dy) && !selectGraph(cvs, ctx, true)) {
         editGraph = null;
         $("body").attr("class", "");
     }
 
     // 判断当前点击的点是否是在页面中的某个元素身上
-    if (!editGraph) selectGraph(cvs, ctx, true);
 
     // 点在编辑元素身上
     if (editGraph && judgePointInRect(editGraph, dx, dy)) {
@@ -155,12 +155,12 @@ $(document).mouseup(() => {
 });
 
 const mouseWheelListener = throttle((ev) => {
-    let {deltaX: x,deltaY: y} = ev.originalEvent as WheelEvent;
+    let { deltaX: x, deltaY: y } = ev.originalEvent as WheelEvent;
     offset.x -= x / 2;
     offset.y -= y / 2;
     drawBg();
     draw();
-},0);
+}, 0);
 
 $(document).on("mousewheel", mouseWheelListener);
 
@@ -209,22 +209,22 @@ function draw() {
     if (selRect) selRect.draw();
     // 编辑状态 且不是拖拽或者拉伸状态显示编辑样式
     if (editGraph) {
-        if(editGraph.children.length > 0)editGraph.children.forEach(graph => graph.editDraw());
+        if (editGraph.children.length > 0) editGraph.children.forEach(graph => graph.editDraw());
         editGraph.draw();
     }
 }
 
-function drawBg(){
+function drawBg() {
     const bgRectWidth = 20;
-    let x = -(offset.x % bgRectWidth),y = -(offset.y % bgRectWidth),isOdd = false;
-    bgCtx.clearRect(0,0,w,h);
-    while(y < h){
+    let x = -(offset.x % bgRectWidth), y = -(offset.y % bgRectWidth), isOdd = false;
+    bgCtx.clearRect(0, 0, w, h);
+    while (y < h) {
         x = isOdd ? x : (x + bgRectWidth);
-        while(x < w){
+        while (x < w) {
             new Rect({
                 points: [
-                    [x - offset.x,y - offset.y],
-                    [x - offset.x + bgRectWidth,y + bgRectWidth - offset.y]
+                    [x - offset.x, y - offset.y],
+                    [x - offset.x + bgRectWidth, y + bgRectWidth - offset.y]
                 ],
                 ctx: bgCtx,
                 cvs: bgCvs,
@@ -305,7 +305,6 @@ function judgePointInRect(rect: Graph, dx: number, dy: number) {
  * @returns 
  */
 function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext2D, one: boolean = false) {
-    editGraph = null;
     let sw = Math.abs(dx - mx), sh = Math.abs(dy - my)
     let children: Graph[] = graphs.filter(({ x, y, x1, y1 }) => {
         let gw = Math.abs(x1 - x), gh = Math.abs(y - y1);
@@ -315,7 +314,7 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
         return rx - lx <= sw + gw && ry - ly <= sh + gh;
     });
     let n = children.length
-    if (n == 0) return;
+    if (n == 0) return false;
     if (one) {
         children = [children.pop()];
         n = 1;
@@ -328,11 +327,20 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
         ly = Math.min(ly, y);
         ry = Math.max(ry, y1);
     }
+    if (key == BoardKey.SHIFT && editGraph) {
+        const {x,y,x1,y1} = editGraph;
+        lx = Math.min(lx, x);
+        rx = Math.max(rx, x1);
+        ly = Math.min(ly, y);
+        ry = Math.max(ry, y1);
+        children = children.concat(editGraph.children);
+    }
+
     if (children.length == 1 && children[0].type === GraphType.LINE) {
 
     } else {
         editGraph = new Rect({
-            points: [[lx, ly], [rx, ry]],
+            points: [[lx,ly],[rx,ry]],
             cvs,
             ctx,
             r: 0,
@@ -343,6 +351,7 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
             children
         });
     }
+    return true;
 }
 
 

@@ -3,7 +3,7 @@ import { globalConfig, offset } from "./config"
 import { GraphDrawStyle, StrokeBorderType, RectState, GraphType } from "./enum"
 import { GraphOption, HorizationAlign, VerticalAlign } from "../types/graph"
 export class Graph {
-    __config: Graph
+    __config: GraphOption.GraphOption
     _x: number // 起点x
     _y: number
     _x1: number

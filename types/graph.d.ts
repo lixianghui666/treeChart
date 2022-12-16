@@ -10,33 +10,29 @@ namespace GraphOption{
         scale?: number
         children?: Graph[]
         rotation?: number
-    }
-    type Point = [number,number]
-    export interface Rect extends Circle{
         state?: RectState
-    }
-    export interface Circle extends GraphOption{
-        r: number
+        r?: number
         drawStyle?: GraphDrawStyle
         strokeBorderType?: BorderStype
-        fillStyle?: F
         strokeStyle?: string
         fillStyle?: string
         strokeWidth?: number
         sAngle?: number
         eAngle?: number
-    }
-    export interface Text extends GraphOption{
-        text?: string
         fontSize?: number
         fontFamily?: string
         fontWeight?: number | string
-        strokeStyle?: string
-        fillStyle?: string
-        drawStyle?: GraphDrawStyle
+        text?: string
+        state?: RectState
+    }
+    type Point = [number,number]
+    export interface Rect extends Circle{
+    }
+    export interface Circle extends GraphOption{
+        r: number
+    }
+    export interface Text extends GraphOption{
     }
     export interface Line extends GraphOption{
-        strokeWidth?: number
-        strokeStyle?: string
     }
 }
