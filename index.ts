@@ -55,7 +55,7 @@ $(window).resize(() => {
 $(window).resize();
 
 $(document).mousedown(ev => {
-    dx = preMx = ev.clientX, dy = preMy = ev.clientY;
+    dx = preMx = ev.clientX - offset.x, dy = preMy = ev.clientY - offset.y;
     drawMode = DrawMode.SELECT;
     // 点击的点不在编辑元素的区域里 清掉编辑状态
     if (editGraph && !judgePointInRect(editGraph, dx, dy)) {
@@ -98,7 +98,7 @@ $(document).mousedown(ev => {
 });
 
 $(document).mousemove(ev => {
-    mx = ev.clientX, my = ev.clientY;
+    mx = ev.clientX - offset.x, my = ev.clientY - offset.y;
     switch (drawMode) {
         case DrawMode.SELECT: drawSelectRect(dx, dy, mx, my, cvs, ctx); break;
         case DrawMode.DRAG: dragRect(preMx, preMy, mx, my); break;

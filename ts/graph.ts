@@ -134,7 +134,7 @@ export class Rect extends Graph {
         }
         if(text)new Text({
             text,
-            points: [[x + (x1 - x) / 2, y + (y1 - y) / 2]],
+            points: [[x + (x1 - x) / 2 - offset.x, y + (y1 - y) / 2 - offset.y]],
             ctx,
             cvs,
             scale: 1,
@@ -143,7 +143,7 @@ export class Rect extends Graph {
         ctx.closePath();
         if (state === RectState.EDIT) {
             [[x, y], [x, y1], [x1, y], [x1, y1]].map(([rx, ry]) => new Circle({
-                points: [[rx, ry]],
+                points: [[rx - offset.x, ry - offset.y]],
                 r: globalConfig.graphEditConnerRadius,
                 strokeStyle: globalConfig.graphEditLineColor,
                 strokeWidth: globalConfig.graphEditLineWidth,
