@@ -51,9 +51,18 @@ html {
 }
 
 .treeChart {
-    background: #2d4059;
-    background: rgba(6,13,20,.18);
+    /* background: #fff; */
+    /* background: rgba(6,13,20,.18); */
     overflow: hidden;
+}
+
+.treeChart_bg{
+    /* width: 100%;
+    height: 100%; */
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 10;
 }
 
 .drawer {

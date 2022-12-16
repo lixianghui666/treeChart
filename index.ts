@@ -1,13 +1,14 @@
 /* 创建单个菜单 */
 import "./main"
-import { scalePx, enlargePx } from "./ts/util"
+import { scalePx, enlargePx, throttle } from "./ts/util"
 import { rects as originRects, lines as originLines } from "./chart-data";
 import { DrawMode, EventType, GraphDrawStyle, GraphType, BoardKey, ParallelHorizationType, ParallerVerticalType, RectState } from "./ts/enum";
 import { drawLine, drawRectModule } from "./ts/draw";
 import { showMenu } from "./ts/menu";
 import { Circle, Line, Rect, Graph, Text } from "./ts/graph";
 import { globalConfig, offset } from "./ts/config";
-const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingContext2D = cvs[0].getContext("2d");
+const cvs: JQuery<HTMLCanvasElement> = $(".treeChart"), ctx: CanvasRenderingContext2D = cvs[0].getContext("2d"),
+bgCvs: JQuery<HTMLCanvasElement> = $(".treeChart_bg"),bgCtx = bgCvs[0].getContext("2d")
 let key: BoardKey = BoardKey.NULL, w = $(window).width(), h = $(window).height();
 const graphs: Graph[] = [
     new Rect({
@@ -44,11 +45,13 @@ const graphs: Graph[] = [
 let dx = 0, dy = 0, mx = 0, my = 0, preMx = 0, preMy = 0, drawMode: DrawMode | null, selRect: Rect | null = null, editGraph: Graph | null
 $(window).resize(() => {
     w = $(window).width(), h = $(window).height()
-    cvs[0].style.width = w + "px";
-    cvs[0].style.height = h + "px";
-    cvs[0].width = w * devicePixelRatio;
-    cvs[0].height = h * devicePixelRatio;
+    cvs[0].style.width = bgCvs[0].style.width = w + "px";
+    cvs[0].style.height = bgCvs[0].style.height = h + "px";
+
+    cvs[0].width = bgCvs[0].width = w * devicePixelRatio;
+    cvs[0].height = bgCvs[0].height = h * devicePixelRatio;
     ctx.scale(devicePixelRatio, devicePixelRatio);
+    bgCtx.scale(devicePixelRatio, devicePixelRatio);
     draw();
 });
 
@@ -151,12 +154,15 @@ $(document).mouseup(() => {
     draw();
 });
 
-$(document).on("mousewheel", (ev) => {
+const mouseWheelListener = throttle((ev) => {
     let {deltaX: x,deltaY: y} = ev.originalEvent as WheelEvent;
     offset.x -= x / 2;
     offset.y -= y / 2;
+    drawBg();
     draw();
-});
+},0);
+
+$(document).on("mousewheel", mouseWheelListener);
 
 $(document).on("contextmenu", (ev) => {
     ev.stopPropagation();
@@ -207,6 +213,33 @@ function draw() {
         editGraph.draw();
     }
 }
+
+function drawBg(){
+    const bgRectWidth = 20;
+    let x = -(offset.x % bgRectWidth),y = -(offset.y % bgRectWidth),isOdd = false;
+    bgCtx.clearRect(0,0,w,h);
+    while(y < h){
+        x = isOdd ? x : (x + bgRectWidth);
+        while(x < w){
+            new Rect({
+                points: [
+                    [x - offset.x,y - offset.y],
+                    [x - offset.x + bgRectWidth,y + bgRectWidth - offset.y]
+                ],
+                ctx: bgCtx,
+                cvs: bgCvs,
+                r: 0,
+                fillStyle: "rgba(6,13,20,.04)",
+                drawStyle: GraphDrawStyle.FILL
+            }).draw();
+            x += bgRectWidth * 2;
+        }
+        isOdd = !isOdd;
+        x = -(offset.x % bgRectWidth);
+        y += bgRectWidth;
+    }
+}
+drawBg();
 draw();
 
 /**
@@ -349,8 +382,8 @@ function stertchBevel(mx: number, my: number, xk: "x" | "x1", yk: "y" | "y1") {
             case "x1-y1": scale = Math.max((mx - x) / w, (my - y) / h); mx = x + w * scale, my = y + h * scale; break;
         }
     }
-    stertchHorV(mx, xk);
     stertchHorV(my, yk);
+    stertchHorV(mx, xk);
 }
 
 

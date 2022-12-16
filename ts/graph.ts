@@ -4,10 +4,10 @@ import { GraphDrawStyle, StrokeBorderType, RectState, GraphType } from "./enum"
 import { GraphOption, HorizationAlign, VerticalAlign } from "../types/graph"
 export class Graph {
     __config: Graph
-    x: number // 起点x
-    y: number
-    x1: number
-    y1: number
+    _x: number // 起点x
+    _y: number
+    _x1: number
+    _y1: number
     type: GraphType
     scale: number = 1
     rotation: number = 0
@@ -30,6 +30,30 @@ export class Graph {
         y: number
         x1: number
         y1: number
+    }
+    set x(x){
+        this._x = x;
+    }
+    get x(){
+        return this._x;
+    }
+    set x1(x1){
+        this._x1 = x1;
+    }
+    get x1(){
+        return this._x1;
+    }
+    set y(y){
+        this._y = y;
+    }
+    get y(){
+        return this._y;
+    }
+    set y1(y1){
+        this._y1 = y1;
+    }
+    get y1(){
+        return this._y1;
     }
     constructor(config) {
         const {
@@ -227,8 +251,15 @@ export class Line extends Graph {
 export class Text extends Graph {
     padding: number
     type: GraphType = GraphType.TEXT
-    _x: number
-    _y: number
+    // set x1(x1){}
+    // set x(x){}
+    set y1(y1){
+        this._y1 = y1;
+    }
+    get y1(){
+        return this._y1;
+    }
+    // set y(y){}
     constructor(config: GraphOption.Text) {
         super(config)
         const { padding } = globalConfig
@@ -250,8 +281,9 @@ export class Text extends Graph {
             x = Math.max(x, this.x + fw + padding);
         });
         if (this.x1 === this.x) {
-            this.x1 = x + padding;
-            this.y1 = y + padding;
+            this._x1 = x + padding;
+            this._y1 = y + padding;
+            console.log(this);
             this.originPos = { x: this.x, y: this.y, y1: this.y1, x1: this.x1 };
         }
         return this;
