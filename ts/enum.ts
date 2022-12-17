@@ -50,6 +50,7 @@ export enum GraphDrawStyle{
 export enum DrawMode{
     SELECT,
     DRAG,
+    DRAGCANVAS,
     STERTCHLT,
     STERTCHRT,
     STERTCHLB,
@@ -73,6 +74,7 @@ export enum GraphType{
 
 export enum BoardKey{
     NULL,
+    SPACE,
     SHIFT
 }
 

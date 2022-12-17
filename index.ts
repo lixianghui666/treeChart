@@ -26,7 +26,7 @@ const graphs: Graph[] = [
         ctx,
         cvs,
         scale: 1,
-        r: 0,
+        r: 3,
         strokeWidth: 2,
         drawStyle: GraphDrawStyle.STROKE
     }),
@@ -39,7 +39,8 @@ const graphs: Graph[] = [
     new Text({
         points: [[100, 100]],
         text: `测试，
-哈哈1111111111`,
+哈哈1111
+111111`,
         cvs, ctx
     })
 ];
@@ -54,50 +55,46 @@ $(window).resize(() => {
     ctx.scale(devicePixelRatio, devicePixelRatio);
     bgCtx.scale(devicePixelRatio, devicePixelRatio);
     draw();
+    drawBg();
 });
 
 $(window).resize();
 
 $(document).mousedown(ev => {
+    let cn: string = "";
     dx = preMx = ev.clientX - offset.x, dy = preMy = ev.clientY - offset.y;
-    drawMode = DrawMode.SELECT;
     // 点击的点不在编辑元素的区域里 清掉编辑状态
-    if (editGraph && !judgePointInRect(editGraph, dx, dy) && !selectGraph(cvs, ctx, true)) {
-        editGraph = null;
-        $("body").attr("class", "");
-    }
-
-    // 判断当前点击的点是否是在页面中的某个元素身上
-
     // 点在编辑元素身上
-    if (editGraph && judgePointInRect(editGraph, dx, dy)) {
+    if (key === BoardKey.SPACE) {
+        drawMode = DrawMode.DRAGCANVAS;
+        cn = "cursor-drag-bg-down";
+        editGraph = null;
+    } else if ((editGraph === null || !judgePointInRect(editGraph, dx, dy)) && !selectGraph(cvs, ctx, true)) {
+        editGraph = null;
+    } else if (judgePointInRect(editGraph, dx, dy)) {
         // 拖拽状态
-        let cn = Array.from($("body")[0].classList)[0] || "";
-        if (cn == "") {
-            $("body").addClass("cursor-drag");
-            drawMode = DrawMode.DRAG;
-        } else {
-            const { x, x1, y, y1 } = editGraph;
-            editGraph.originPos = {
-                x, x1, y, y1
-            };
-            editGraph.children.forEach(graph => {
-                const { x, x1, y, y1 } = graph;
-                graph.originPos = { x, x1, y, y1 };
-            });
-            // 拉伸状态
-            drawMode = DrawMode[{
-                "cursor-lt": "STERTCHLT",
-                "cursor-rt": "STERTCHRT",
-                "cursor-rb": "STERTCHRB",
-                "cursor-lb": "STERTCHLB",
-                "cursor-t": "STERTCHT",
-                "cursor-r": "STERTCHR",
-                "cursor-b": "STERTCHB",
-                "cursor-l": "STERTCHL"
-            }[cn]];
-        }
+        cn = Array.from($("body")[0].classList)[0] || "cursor-drag";
+        const { x, x1, y, y1 } = editGraph;
+        editGraph.originPos = {
+            x, x1, y, y1
+        };
+        editGraph.children.forEach(graph => {
+            const { x, x1, y, y1 } = graph;
+            graph.originPos = { x, x1, y, y1 };
+        });
+        drawMode = DrawMode[{
+            "cursor-lt": "STERTCHLT",
+            "cursor-rt": "STERTCHRT",
+            "cursor-rb": "STERTCHRB",
+            "cursor-lb": "STERTCHLB",
+            "cursor-t": "STERTCHT",
+            "cursor-r": "STERTCHR",
+            "cursor-b": "STERTCHB",
+            "cursor-l": "STERTCHL"
+        }[cn]] || DrawMode.DRAG;
     }
+    if (!drawMode) drawMode = DrawMode.SELECT;
+    $("body").attr("class", cn);
 });
 
 $(document).mousemove(ev => {
@@ -105,6 +102,7 @@ $(document).mousemove(ev => {
     switch (drawMode) {
         case DrawMode.SELECT: drawSelectRect(dx, dy, mx, my, cvs, ctx); break;
         case DrawMode.DRAG: dragRect(preMx, preMy, mx, my); break;
+        case DrawMode.DRAGCANVAS: dragCanvas(preMx, preMy, mx, my); break;
         case DrawMode.STERTCHL: stertchHorV(mx, "x"); break;
         case DrawMode.STERTCHR: stertchHorV(mx, "x1"); break;
         case DrawMode.STERTCHT: stertchHorV(my, "y"); break;
@@ -116,7 +114,7 @@ $(document).mousemove(ev => {
     }
 
     // 编辑状态
-    if (editGraph && drawMode < 1) {
+    if (editGraph && drawMode === null) {
         // 矩形
         if (editGraph.type === GraphType.RECT) {
             $("body").attr("class", "");
@@ -143,7 +141,8 @@ $(document).mousemove(ev => {
 
 $(document).mouseup(() => {
     switch (drawMode) {
-        case DrawMode.SELECT: selectGraph(cvs, ctx);
+        case DrawMode.SELECT: selectGraph(cvs, ctx);break;
+        case DrawMode.DRAGCANVAS: (key === BoardKey.SPACE && $("body").attr("class","cursor-drag-bg-up"));break;
     }
     drawMode = null;
     selRect = null;
@@ -164,24 +163,30 @@ const mouseWheelListener = throttle((ev) => {
 
 $(document).on("mousewheel", mouseWheelListener);
 
+
+const keydownListener = (ev) => {
+    switch (ev.key) {
+        case "Shift": key = BoardKey.SHIFT; break;
+        case " ": key = BoardKey.SPACE; break;
+    }
+    if (key === BoardKey.SHIFT && drawMode >= DrawMode.STERTCHLT && drawMode <= DrawMode.STERTCHRB) {
+        stertchBevel(
+            mx,
+            my,
+            [DrawMode.STERTCHLT, DrawMode.STERTCHLB].includes(drawMode) ? "x" : "x1",
+            [DrawMode.STERTCHLT, DrawMode.STERTCHRT].includes(drawMode) ? "y" : "y1"
+        );
+    } else if (key === BoardKey.SPACE && !$("body").hasClass("cursor-drag-bg-down")) {
+        $("body").attr("class","cursor-drag-bg-up");
+    }
+}
+
+
 $(document).on("contextmenu", (ev) => {
     ev.stopPropagation();
     return false;
-}).on("keydown", (ev) => {
-    if (ev.key === "Shift") {
-        key = BoardKey.SHIFT;
-        if (drawMode >= 2 && drawMode <= 5) {
-            stertchBevel(
-                mx,
-                my,
-                [DrawMode.STERTCHLT, DrawMode.STERTCHLB].includes(drawMode) ? "x" : "x1",
-                [DrawMode.STERTCHLT, DrawMode.STERTCHRT].includes(drawMode) ? "y" : "y1"
-            );
-        }
-    }
-}).on("keyup", () => {
-    key = BoardKey.NULL;
-    if (drawMode >= 2 && drawMode <= 5) {
+}).on("keydown", keydownListener).on("keyup", () => {
+    if (drawMode >= DrawMode.STERTCHLT && drawMode <= DrawMode.STERTCHRB) {
         stertchBevel(
             mx,
             my,
@@ -189,6 +194,10 @@ $(document).on("contextmenu", (ev) => {
             [DrawMode.STERTCHLT, DrawMode.STERTCHRT].includes(drawMode) ? "y" : "y1"
         );
     }
+    if (key === BoardKey.SPACE) {
+        $("body").attr("class", "");
+    }
+    key = BoardKey.NULL;
 });
 
 
@@ -239,8 +248,9 @@ function drawBg() {
         y += bgRectWidth;
     }
 }
-drawBg();
 draw();
+
+drawBg();
 
 /**
  * 选择矩形
@@ -285,6 +295,12 @@ function dragRect(x: number, y: number, x1: number, y1: number) {
     draw();
 }
 
+function dragCanvas(x: number, y: number, x1: number, y1: number) {
+    offset.x += x1 - x;
+    offset.y += y1 - y;
+    draw();
+}
+
 /**
  * 
  * @param rect 矩形实例
@@ -292,9 +308,10 @@ function dragRect(x: number, y: number, x1: number, y1: number) {
  * @param dy 点击y点
  * @returns 
  */
-function judgePointInRect(rect: Graph, dx: number, dy: number) {
-    const { x, y, x1, y1 } = rect, minx = Math.min(x, x1), maxx = Math.max(x, x1), miny = Math.min(y, y1), maxy = Math.max(y, y1);
-    return dx >= minx && dx <= maxx && dy >= miny && dy <= maxy;
+function judgePointInRect(rect: Graph | null, dx: number, dy: number) {
+    if (rect == null) return false;
+    const { x, y, x1, y1 } = rect, minx = Math.min(x, x1), maxx = Math.max(x, x1), miny = Math.min(y, y1), maxy = Math.max(y, y1), r = globalConfig.graphEditConnerRadius;
+    return dx >= minx - r && dx <= maxx + r && dy >= miny - r && dy <= maxy + r;
 }
 
 
@@ -328,7 +345,7 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
         ry = Math.max(ry, y1);
     }
     if (key == BoardKey.SHIFT && editGraph) {
-        const {x,y,x1,y1} = editGraph;
+        const { x, y, x1, y1 } = editGraph;
         lx = Math.min(lx, x);
         rx = Math.max(rx, x1);
         ly = Math.min(ly, y);
@@ -340,7 +357,7 @@ function selectGraph(cvs: JQuery<HTMLCanvasElement>, ctx: CanvasRenderingContext
 
     } else {
         editGraph = new Rect({
-            points: [[lx,ly],[rx,ry]],
+            points: [[lx, ly], [rx, ry]],
             cvs,
             ctx,
             r: 0,

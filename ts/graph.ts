@@ -267,7 +267,7 @@ export class Text extends Graph {
         this.sameScaleRatio = true
     }
     draw(): Graph {
-        let { __config, x, y, x1, padding, children } = this, { text, ctx, fontWeight, fontSize = globalConfig.graphTextFontSize, fontFamily } = __config, txts = text.split("\n");
+        let { __config, x, y, padding, children } = this, { text, ctx, fontWeight, fontSize = globalConfig.graphTextFontSize, fontFamily } = __config, txts = text.split("\n");
         y += offset.y;
         if (text.trim() === "") return;
         txts.forEach(txt => {
@@ -283,7 +283,6 @@ export class Text extends Graph {
         if (this.x1 === this.x) {
             this._x1 = x + padding;
             this._y1 = y + padding;
-            console.log(this);
             this.originPos = { x: this.x, y: this.y, y1: this.y1, x1: this.x1 };
         }
         return this;
